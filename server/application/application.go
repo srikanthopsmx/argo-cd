@@ -153,6 +153,7 @@ func NewServer(
 // If the user does provide a "project," we can respond more specifically. If the user does not have access to the given
 // app name in the given project, we return "permission denied." If the app exists, but the project is different from
 func (s *Server) getAppEnforceRBAC(ctx context.Context, action, project, namespace, name string, getApp func() (*appv1.Application, error)) (*appv1.Application, *appv1.AppProject, error) {
+	log.Info("INSIDE  getAppEnforceRBAC FUNCTIOIN")
 	user := session.Username(ctx)
 	if user == "" {
 		user = "Unknown user"
@@ -235,6 +236,7 @@ func (s *Server) getAppEnforceRBAC(ctx context.Context, action, project, namespa
 // denied, or any other error occurs when getting the app, we return a permission denied error to obscure any sensitive
 // information.
 func (s *Server) getApplicationEnforceRBACInformer(ctx context.Context, action, project, namespace, name string) (*appv1.Application, *appv1.AppProject, error) {
+	log.Info("INSIDE  getApplicationEnforceRBACInformer FUNCTIOIN")
 	namespaceOrDefault := s.appNamespaceOrDefault(namespace)
 	return s.getAppEnforceRBAC(ctx, action, project, namespaceOrDefault, name, func() (*appv1.Application, error) {
 		return s.appLister.Applications(namespaceOrDefault).Get(name)
@@ -245,6 +247,7 @@ func (s *Server) getApplicationEnforceRBACInformer(ctx context.Context, action, 
 // or any other error occurs when getting the app, we return a permission denied error to obscure any sensitive
 // information.
 func (s *Server) getApplicationEnforceRBACClient(ctx context.Context, action, project, namespace, name, resourceVersion string) (*appv1.Application, *appv1.AppProject, error) {
+	log.Info("INSIDE  getApplicationEnforceRBACClient FUNCTIOIN")
 	namespaceOrDefault := s.appNamespaceOrDefault(namespace)
 	return s.getAppEnforceRBAC(ctx, action, project, namespaceOrDefault, name, func() (*appv1.Application, error) {
 		if !s.isNamespaceEnabled(namespaceOrDefault) {
@@ -258,6 +261,7 @@ func (s *Server) getApplicationEnforceRBACClient(ctx context.Context, action, pr
 
 // List returns list of applications
 func (s *Server) List(ctx context.Context, q *application.ApplicationQuery) (*appv1.ApplicationList, error) {
+	log.Info("INSIDE  List FUNCTIOIN")
 	selector, err := labels.Parse(q.GetSelector())
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the selector: %w", err)
@@ -312,6 +316,8 @@ func (s *Server) List(ctx context.Context, q *application.ApplicationQuery) (*ap
 
 // Create creates an application
 func (s *Server) Create(ctx context.Context, q *application.ApplicationCreateRequest) (*appv1.Application, error) {
+	log.Info("INSIDE  Create FUNCTIOIN")
+
 	if q.GetApplication() == nil {
 		return nil, fmt.Errorf("error creating application: application is nil in request")
 	}
@@ -434,6 +440,8 @@ func (s *Server) queryRepoServer(ctx context.Context, proj *appv1.AppProject, ac
 
 // GetManifests returns application manifests
 func (s *Server) GetManifests(ctx context.Context, q *application.ApplicationManifestQuery) (*apiclient.ManifestResponse, error) {
+	log.Info("INSIDE  GetManifests FUNCTIOIN")
+
 	if q.Name == nil || *q.Name == "" {
 		return nil, fmt.Errorf("invalid request: application name is missing")
 	}
@@ -570,6 +578,8 @@ func (s *Server) GetManifests(ctx context.Context, q *application.ApplicationMan
 }
 
 func (s *Server) GetManifestsWithFiles(stream application.ApplicationService_GetManifestsWithFilesServer) error {
+	log.Info("INSIDE  GetManifestsWithFiles FUNCTIOIN")
+
 	ctx := stream.Context()
 	query, err := manifeststream.ReceiveApplicationManifestQueryWithFiles(stream)
 	if err != nil {
@@ -697,6 +707,8 @@ func (s *Server) GetManifestsWithFiles(stream application.ApplicationService_Get
 
 // Get returns an application by name
 func (s *Server) Get(ctx context.Context, q *application.ApplicationQuery) (*appv1.Application, error) {
+	log.Info("INSIDE  Get FUNCTIOIN")
+
 	appName := q.GetName()
 	appNs := s.appNamespaceOrDefault(q.GetAppNamespace())
 
@@ -804,6 +816,8 @@ func (s *Server) Get(ctx context.Context, q *application.ApplicationQuery) (*app
 
 // ListResourceEvents returns a list of event resources
 func (s *Server) ListResourceEvents(ctx context.Context, q *application.ApplicationResourceEventsQuery) (*v1.EventList, error) {
+	log.Info("INSIDE  ListResourceEvents FUNCTIOIN")
+
 	a, _, err := s.getApplicationEnforceRBACInformer(ctx, rbacpolicy.ActionGet, q.GetProject(), q.GetAppNamespace(), q.GetName())
 	if err != nil {
 		return nil, err
@@ -869,6 +883,8 @@ func (s *Server) ListResourceEvents(ctx context.Context, q *application.Applicat
 // validateAndUpdateApp validates and updates the application. currentProject is the name of the project the app
 // currently is under. If not specified, we assume that the app is under the project specified in the app spec.
 func (s *Server) validateAndUpdateApp(ctx context.Context, newApp *appv1.Application, merge bool, validate bool, action string, currentProject string) (*appv1.Application, error) {
+	log.Info("INSIDE  validateAndUpdateApp FUNCTIOIN")
+
 	s.projectLock.RLock(newApp.Spec.GetProject())
 	defer s.projectLock.RUnlock(newApp.Spec.GetProject())
 
@@ -899,6 +915,7 @@ var informerSyncTimeout = 2 * time.Second
 // after a mutating API call (create/update). This function should be called after a creates &
 // update to give a probable (but not guaranteed) chance of being up-to-date after the create/update.
 func (s *Server) waitSync(app *appv1.Application) {
+	log.Info("INSIDE waitSync FUNCTION ")
 	logCtx := log.WithField("application", app.Name)
 	deadline := time.Now().Add(informerSyncTimeout)
 	minVersion, err := strconv.Atoi(app.ResourceVersion)
@@ -923,6 +940,8 @@ func (s *Server) waitSync(app *appv1.Application) {
 }
 
 func (s *Server) updateApp(app *appv1.Application, newApp *appv1.Application, ctx context.Context, merge bool) (*appv1.Application, error) {
+	log.Info("INSIDE updateApp FUNCTION ")
+
 	for i := 0; i < 10; i++ {
 		app.Spec = newApp.Spec
 		if merge {
@@ -956,6 +975,8 @@ func (s *Server) updateApp(app *appv1.Application, newApp *appv1.Application, ct
 
 // Update updates an application
 func (s *Server) Update(ctx context.Context, q *application.ApplicationUpdateRequest) (*appv1.Application, error) {
+	log.Info("INSIDE Update FUNCTION ")
+
 	if q.GetApplication() == nil {
 		return nil, fmt.Errorf("error updating application: application is nil in request")
 	}
@@ -1039,6 +1060,8 @@ func (s *Server) Patch(ctx context.Context, q *application.ApplicationPatchReque
 }
 
 func (s *Server) getAppProject(ctx context.Context, a *appv1.Application, logCtx *log.Entry) (*appv1.AppProject, error) {
+	log.Info("INSIDE getAppProject FUNCTION ")
+
 	proj, err := argo.GetAppProject(a, applisters.NewAppProjectLister(s.projInformer.GetIndexer()), s.ns, s.settingsMgr, s.db, ctx)
 	if err == nil {
 		return proj, nil
@@ -1065,6 +1088,8 @@ func (s *Server) getAppProject(ctx context.Context, a *appv1.Application, logCtx
 
 // Delete removes an application and all associated resources
 func (s *Server) Delete(ctx context.Context, q *application.ApplicationDeleteRequest) (*application.ApplicationResponse, error) {
+	log.Info("INSIDE Delete FUNCTION ")
+
 	appName := q.GetName()
 	appNs := s.appNamespaceOrDefault(q.GetAppNamespace())
 	a, _, err := s.getApplicationEnforceRBACClient(ctx, rbacpolicy.ActionGet, q.GetProject(), appNs, appName, "")
@@ -1882,6 +1907,8 @@ func isTheSelectedOne(currentNode *appv1.ResourceNode, q *application.Applicatio
 
 // Sync syncs an application to its target state
 func (s *Server) Sync(ctx context.Context, syncReq *application.ApplicationSyncRequest) (*appv1.Application, error) {
+	log.Info("INSIDE Sync FUNCTION ")
+
 	a, proj, err := s.getApplicationEnforceRBACClient(ctx, rbacpolicy.ActionGet, syncReq.GetProject(), syncReq.GetAppNamespace(), syncReq.GetName(), "")
 	if err != nil {
 		return nil, err
@@ -1984,6 +2011,8 @@ func (s *Server) Sync(ctx context.Context, syncReq *application.ApplicationSyncR
 }
 
 func (s *Server) resolveSourceRevisions(ctx context.Context, a *appv1.Application, syncReq *application.ApplicationSyncRequest) (string, string, []string, []string, error) {
+	log.Info("INSIDE resolveSourceRevisions FUNCTION ")
+
 	if a.Spec.HasMultipleSources() {
 		numOfSources := int64(len(a.Spec.GetSources()))
 		sourceRevisions := make([]string, numOfSources)
@@ -2026,6 +2055,8 @@ func (s *Server) resolveSourceRevisions(ctx context.Context, a *appv1.Applicatio
 }
 
 func (s *Server) Rollback(ctx context.Context, rollbackReq *application.ApplicationRollbackRequest) (*appv1.Application, error) {
+	log.Info("INSIDE Rollback FUNCTION ")
+
 	a, _, err := s.getApplicationEnforceRBACClient(ctx, rbacpolicy.ActionSync, rollbackReq.GetProject(), rollbackReq.GetAppNamespace(), rollbackReq.GetName(), "")
 	if err != nil {
 		return nil, err
@@ -2634,6 +2665,8 @@ func (s *Server) inferResourcesStatusHealth(app *appv1.Application) {
 }
 
 func convertSyncWindows(w *appv1.SyncWindows) []*application.ApplicationSyncWindow {
+	log.Info("INSIDE convertSyncWindows FUNCTION ")
+
 	if w != nil {
 		var windows []*application.ApplicationSyncWindow
 		for _, w := range *w {
@@ -2680,6 +2713,8 @@ func (s *Server) isNamespaceEnabled(namespace string) bool {
 // getProjectsFromApplicationQuery gets the project names from a query. If the legacy "project" field was specified, use
 // that. Otherwise, use the newer "projects" field.
 func getProjectsFromApplicationQuery(q application.ApplicationQuery) []string {
+	log.Info("INSIDE getProjectsFromApplicationQuery FUNCTION ")
+
 	if q.Project != nil {
 		return q.Project
 	}
