@@ -2665,7 +2665,7 @@ func (s *Server) inferResourcesStatusHealth(app *appv1.Application) {
 }
 
 func convertSyncWindows(w *appv1.SyncWindows) []*application.ApplicationSyncWindow {
-	log.Info("INSIDE convertSyncWindows FUNCTION ")
+	log.Info("INSIDE convertSyncWindows  ,,,,, FUNCTION ")
 
 	if w != nil {
 		var windows []*application.ApplicationSyncWindow
